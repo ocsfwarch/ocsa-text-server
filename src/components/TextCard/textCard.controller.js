@@ -3,39 +3,85 @@
  */
 
 const fs = require('fs').promises
+const getLocalDate = require('../../utils/DateTimeUtils')
 
 async function getTextCard(_, res) {
-    const data = {
+    const currentDate = getLocalDate()
+
+    let data = {
         id: 0,
-        header: "Monday, December 4, 1958",
+        header: currentDate,
         data: "",
     }
 
-    let results = null
-
     try {
-        results = await fs.readFile('./files/textCards.json')       
-        results = JSON.parse(results) 
-    } catch (error) {
-        results = data
+        const textCards = await readTextCardFile()
+        const currentCard = textCards.find((card) => card.header === currentDate)
+        if ( currentCard ) data = currentCard
+
+    } catch(err) {
+        console.log(err)
     }
 
-    res.json(results)
+    //let results = null
+
+    //try {
+    //    results = await fs.readFile('./files/textCards.json')       
+    //    results = JSON.parse(results) 
+    //} catch (error) {
+    //    results = data
+    //}
+
+    res.json(data)
 }
 
 async function saveTextCard(req, res) {
-    console.log('saveTextCard is running...')
+    console.log(`saveTextCard is running... ${req.body.id}`)
     const data = req.body
+    let newTextCards = []
 
-    if (data.id === 0){
-        data.id = 999
+    try {
+        const textCards = await readTextCardFile()
+        if (textCards) {
+            if (data.id === 0) {
+                const id = textCards[textCards.length - 1].id
+                data.id = id + 1
+                newTextCards = [...textCards, data]
+            } else {
+                newTextCards = textCards.map((card) => {
+                    if ( card.id === data.id ) {
+                        return data
+                    }
+
+                    return card
+                })
+            }
+        } else {
+            data.id = 1
+            newTextCards.push(data)
+        }
+
+        writeTextCardFile(newTextCards)
+
+    } catch(err) {
+        console.log(err)
     }
-    //const data = {
-    //    id: 0,
-    //    header: "Monday, December 4, 1958",
-    //    data: "",
-    //}
     res.json(data)
+}
+
+async function readTextCardFile(){
+    const textCards = fs.readFile('./files/textCards.json')
+    .then((results) => JSON.parse(results))    
+    .catch((err) => console.log(err.message))   
+    return textCards
+}
+
+async function writeTextCardFile(content){
+    fs.writeFile('./files/textCards.json', JSON.stringify(content), err => {
+        if (err) {
+            console.log(err)
+        }
+    })
 }
 
 module.exports = { getTextCard, saveTextCard }

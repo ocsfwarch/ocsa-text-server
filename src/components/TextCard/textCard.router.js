@@ -11,5 +11,6 @@ const controller = require("./textCard.controller")
 const methodNotAllowed = require('../../errors/methodNotAllowed')
 
 textRouter.route("/").get(controller.getTextCard).all(methodNotAllowed)
+textRouter.route("/save").post(controller.saveTextCard).all(methodNotAllowed)
 
 module.exports = textRouter
